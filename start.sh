@@ -55,63 +55,47 @@ else
     echo -e "[combine]\ntype = alias\nremote = dummy" > rclone.conf
 fi
 
-# FIXED: Optimized command for video streaming with enhanced stability
+# Base command with essential options
 CMD="${RCLONE_COMMAND} serve http combine: --addr=:$PORT --read-only --config rclone.conf"
 
-# CRITICAL FIX: Extended timeouts to prevent H27/H28 errors
-CMD="${CMD} --timeout=600s"              # 10 minutes total timeout (was 120s)
-CMD="${CMD} --contimeout=120s"           # 2 minutes connection timeout (was 60s)
-CMD="${CMD} --expect-continue-timeout=60s" # Handle large file uploads better
+# VFS caching for better streaming performance
+CMD="${CMD} --vfs-cache-mode=full"              # Full VFS caching for best performance
+CMD="${CMD} --vfs-cache-max-size=280G"          # Maximum cache utilization
+CMD="${CMD} --vfs-cache-max-age=168h"           # Cache files for 7 days
+CMD="${CMD} --vfs-read-chunk-size=128M"         # Optimized chunk size for streaming
+CMD="${CMD} --vfs-read-chunk-size-limit=2G"     # Reasonable chunk limit
+CMD="${CMD} --vfs-write-back=60m"               # Extended write back cache
+CMD="${CMD} --vfs-cache-poll-interval=60s"      # Less frequent polling to reduce load
 
-# FIXED: Better streaming buffer configuration
-CMD="${CMD} --buffer-size=256M"          # Increased buffer for smoother streaming
-CMD="${CMD} --vfs-cache-mode=full"       # Full VFS caching for best performance
-CMD="${CMD} --vfs-cache-max-size=280G"   # Maximum cache utilization
-CMD="${CMD} --vfs-cache-max-age=168h"    # Cache files for 7 days (was 72h)
-CMD="${CMD} --vfs-read-chunk-size=128M"  # Optimized chunk size (was 512M - too aggressive)
-CMD="${CMD} --vfs-read-chunk-size-limit=2G" # Reasonable chunk limit (was 4G)
-CMD="${CMD} --vfs-write-back=60m"        # Extended write back cache
-CMD="${CMD} --vfs-cache-poll-interval=60s" # Less frequent polling to reduce load
+# HTTP server optimizations
+CMD="${CMD} --max-header-bytes=16384"           # Increased header size for large requests
+CMD="${CMD} --server-read-timeout=300s"         # 5 minutes read timeout
+CMD="${CMD} --server-write-timeout=300s"        # 5 minutes write timeout
 
-# FIXED: Improved network stability
-CMD="${CMD} --transfers=8"               # Reduced transfers to avoid overwhelming (was 16)
-CMD="${CMD} --checkers=16"               # Balanced checkers (was 32)
-CMD="${CMD} --low-level-retries=10"      # More retries for unstable connections (was 5)
-CMD="${CMD} --retry-delay=5s"            # Delay between retries
-CMD="${CMD} --multi-thread-streams=4"    # Reduced multi-threading (was 8)
-CMD="${CMD} --fast-list"                 # Faster directory listings
+# Directory and file handling
+CMD="${CMD} --dir-cache-time=30m"               # Directory cache time
+CMD="${CMD} --poll-interval=60s"                # Polling interval
+CMD="${CMD} --no-checksum"                      # Skip checksums for faster streaming
 
-# CRITICAL FIX: HTTP server optimizations for large video files
-CMD="${CMD} --max-header-bytes=16384"    # Increased header size (was 8192)
-CMD="${CMD} --server-read-timeout=300s"  # 5 minutes read timeout (was 1h - too long)
-CMD="${CMD} --server-write-timeout=300s" # 5 minutes write timeout (was 1h - too long)
-CMD="${CMD} --server-keepalive-timeout=120s" # Keep connections alive longer
-
-# FIXED: Memory and performance optimizations
-CMD="${CMD} --use-mmap"                  # Use memory mapping for better performance
-CMD="${CMD} --dir-cache-time=30m"        # Shorter cache time for better responsiveness (was 1h)
-CMD="${CMD} --poll-interval=60s"         # Less frequent polling to reduce load
-CMD="${CMD} --bwlimit-file=100M"         # Limit per-file bandwidth to prevent timeouts
-
-# ADDED: Range request support for video streaming
-CMD="${CMD} --http-no-slash"             # Better URL handling
-CMD="${CMD} --http-range-bug-workaround" # Fix range request issues with some clients
-
-# FIXED: Remote control with safer settings
-CMD="${CMD} --rc"                        # Enable remote control for monitoring
-CMD="${CMD} --rc-addr=localhost:5572"   # More explicit localhost binding
-CMD="${CMD} --rc-no-auth"                # No auth for internal RC
-CMD="${CMD} --stats=60s"                 # Show stats every minute (was 30s)
-CMD="${CMD} --stats-one-line"            # Compact stats format
-
-# ADDED: Error handling improvements
-CMD="${CMD} --ignore-checksum"           # Skip checksum for faster streaming
-CMD="${CMD} --no-traverse"               # Don't traverse all files upfront
-CMD="${CMD} --disable=move"              # Disable move operations for safety
-
-# ADDED: Logging for debugging (can be disabled in production)
-CMD="${CMD} --log-level=INFO"            # INFO level logging
-CMD="${CMD} --log-format=date,time,level,msg" # Structured logging
+# Global rclone options (these work with serve http)
+export RCLONE_BUFFER_SIZE=256M                  # Set buffer size via environment
+export RCLONE_TIMEOUT=600s                      # 10 minutes total timeout
+export RCLONE_CONTIMEOUT=120s                   # 2 minutes connection timeout
+export RCLONE_EXPECT_CONTINUE_TIMEOUT=60s       # Handle large file uploads better
+export RCLONE_TRANSFERS=8                       # Reduced transfers to avoid overwhelming
+export RCLONE_CHECKERS=16                       # Balanced checkers
+export RCLONE_LOW_LEVEL_RETRIES=10              # More retries for unstable connections
+export RCLONE_MULTI_THREAD_STREAMS=4            # Reduced multi-threading
+export RCLONE_FAST_LIST=true                    # Faster directory listings
+export RCLONE_USE_MMAP=true                     # Use memory mapping for better performance
+export RCLONE_BWLIMIT_FILE=100M                 # Limit per-file bandwidth
+export RCLONE_IGNORE_CHECKSUM=true              # Skip checksum for faster streaming
+export RCLONE_NO_TRAVERSE=true                  # Don't traverse all files upfront
+export RCLONE_DISABLE=move                      # Disable move operations for safety
+export RCLONE_LOG_LEVEL=INFO                    # INFO level logging
+export RCLONE_LOG_FORMAT="date,time,level,msg"  # Structured logging
+export RCLONE_STATS=60s                         # Show stats every minute
+export RCLONE_STATS_ONE_LINE=true               # Compact stats format
 
 if [ -n "${USERNAME}" ] && [ -n "${PASSWORD}" ]; then
     CMD="${CMD} --user=\"$USERNAME\" --pass=\"$PASSWORD\""
@@ -125,13 +109,12 @@ else
     echo "Template is set to light"
 fi
 
-echo "🔧 FIXED: Running rclone with enhanced video streaming stability"
+echo "🔧 FIXED: Running rclone with enhanced video streaming stability (v1.69.3 compatible)"
 echo "✅ Key fixes applied:"
-echo "- Extended timeouts: 10min total, 2min connection (prevents H27/H28 errors)"
+echo "- Extended timeouts: 10min total, 2min connection (via environment variables)"
 echo "- Optimized buffer: 256MB with 128MB chunks (smoother streaming)"
 echo "- Reduced transfers: 8 concurrent (prevents overwhelming)"
-echo "- Enhanced retries: 10 attempts with 5s delay (better stability)"
-echo "- Range request support (better video player compatibility)"
+echo "- Enhanced retries: 10 attempts (better stability)"
 echo "- 7-day cache duration (longer persistence)"
 echo "- Per-file bandwidth limit: 100MB/s (prevents timeouts)"
 echo ""
