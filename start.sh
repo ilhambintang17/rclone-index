@@ -69,13 +69,16 @@ CMD="${CMD} --vfs-read-chunk-size-limit=512M"   # Lower limit for better respons
 CMD="${CMD} --vfs-read-chunk-streams=8"         # Multiple parallel streams for seeking
 # Reduced VFS read ahead buffer to conserve memory (was 256M)
 CMD="${CMD} --vfs-read-ahead=128M"              # Read ahead for smoother playback
+CMD="${CMD} --vfs-read-wait=5s"                 # Time to wait for more data from source
 CMD="${CMD} --vfs-write-back=5s"                # Faster write back
 CMD="${CMD} --vfs-cache-poll-interval=30s"      # More frequent polling for updates
 
 # HTTP server optimizations for video seeking
 CMD="${CMD} --max-header-bytes=32768"           # Larger headers for range requests
-CMD="${CMD} --server-read-timeout=60s"          # Shorter timeout to prevent H27 errors
-CMD="${CMD} --server-write-timeout=60s"         # Shorter timeout for faster response
+# Reduced server read timeout to respond/fail faster than Heroku router timeout and client impatience (was 60s)
+CMD="${CMD} --server-read-timeout=25s"          # Shorter timeout to prevent H27 errors
+# Reduced server write timeout for similar reasons (was 60s)
+CMD="${CMD} --server-write-timeout=25s"         # Shorter timeout for faster response
 
 # Directory and file handling optimized for video
 CMD="${CMD} --dir-cache-time=10m"               # Shorter directory cache for responsiveness
@@ -86,10 +89,12 @@ CMD="${CMD} --no-modtime"                       # Skip modification time checks
 # Global rclone options optimized for video streaming and seeking
 # Reduced rclone buffer size to conserve memory (was 128M)
 export RCLONE_BUFFER_SIZE=64M                  # Smaller buffer for faster seeking
-export RCLONE_TIMEOUT=120s                      # Shorter timeout to prevent H27
+# Reduced overall rclone operation timeout to fail faster on stuck operations (was 120s)
+export RCLONE_TIMEOUT=30s                      # Shorter timeout to prevent H27
 export RCLONE_CONTIMEOUT=30s                    # Quick connection timeout
 export RCLONE_EXPECT_CONTINUE_TIMEOUT=10s       # Faster expect continue
-export RCLONE_TRANSFERS=4                       # Fewer transfers to prevent overwhelming Heroku
+# Reduced concurrent transfers to lessen load on backend/network (was 4)
+export RCLONE_TRANSFERS=2                       # Fewer transfers to prevent overwhelming Heroku
 export RCLONE_CHECKERS=8                        # Fewer checkers for stability
 export RCLONE_LOW_LEVEL_RETRIES=5               # Fewer retries for faster response
 export RCLONE_MULTI_THREAD_STREAMS=8            # More streams for parallel seeking
