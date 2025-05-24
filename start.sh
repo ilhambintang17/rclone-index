@@ -60,12 +60,15 @@ CMD="${RCLONE_COMMAND} serve http combine: --addr=:$PORT --read-only --config rc
 
 # VFS caching optimized for video streaming and seeking
 CMD="${CMD} --vfs-cache-mode=full"              # Full VFS caching for best performance
-CMD="${CMD} --vfs-cache-max-size=450M"          # Reduced cache size for Heroku memory limits
+# Reduced VFS cache size to conserve memory on Heroku (was 450M)
+CMD="${CMD} --vfs-cache-max-size=250M"          # Reduced cache size for Heroku memory limits
 CMD="${CMD} --vfs-cache-max-age=24h"            # Shorter cache time for dynamic content
-CMD="${CMD} --vfs-read-chunk-size=64M"          # Smaller chunks for faster seeking
+# Reduced VFS read chunk size to conserve memory (was 64M)
+CMD="${CMD} --vfs-read-chunk-size=32M"          # Smaller chunks for faster seeking
 CMD="${CMD} --vfs-read-chunk-size-limit=512M"   # Lower limit for better responsiveness
 CMD="${CMD} --vfs-read-chunk-streams=8"         # Multiple parallel streams for seeking
-CMD="${CMD} --vfs-read-ahead=256M"              # Read ahead for smoother playback
+# Reduced VFS read ahead buffer to conserve memory (was 256M)
+CMD="${CMD} --vfs-read-ahead=128M"              # Read ahead for smoother playback
 CMD="${CMD} --vfs-write-back=5s"                # Faster write back
 CMD="${CMD} --vfs-cache-poll-interval=30s"      # More frequent polling for updates
 
@@ -81,7 +84,8 @@ CMD="${CMD} --no-checksum"                      # Skip checksums for faster stre
 CMD="${CMD} --no-modtime"                       # Skip modification time checks
 
 # Global rclone options optimized for video streaming and seeking
-export RCLONE_BUFFER_SIZE=128M                  # Smaller buffer for faster seeking
+# Reduced rclone buffer size to conserve memory (was 128M)
+export RCLONE_BUFFER_SIZE=64M                  # Smaller buffer for faster seeking
 export RCLONE_TIMEOUT=120s                      # Shorter timeout to prevent H27
 export RCLONE_CONTIMEOUT=30s                    # Quick connection timeout
 export RCLONE_EXPECT_CONTINUE_TIMEOUT=10s       # Faster expect continue
@@ -99,7 +103,6 @@ export RCLONE_LOG_LEVEL=NOTICE                  # Less verbose logging
 export RCLONE_LOG_FORMAT="date,time,level,msg"  # Structured logging
 export RCLONE_STATS=30s                         # More frequent stats
 export RCLONE_STATS_ONE_LINE=true               # Compact stats
-export RCLONE_TPX_TX_BUFFER_SIZE=64M            # Smaller transfer buffer
 export RCLONE_DRIVE_CHUNK_SIZE=32M              # Smaller Google Drive chunks for seeking
 
 if [ -n "${USERNAME}" ] && [ -n "${PASSWORD}" ]; then
