@@ -58,44 +58,49 @@ fi
 # Base command with essential options
 CMD="${RCLONE_COMMAND} serve http combine: --addr=:$PORT --read-only --config rclone.conf"
 
-# VFS caching for better streaming performance
+# VFS caching optimized for video streaming and seeking
 CMD="${CMD} --vfs-cache-mode=full"              # Full VFS caching for best performance
-CMD="${CMD} --vfs-cache-max-size=280G"          # Maximum cache utilization
-CMD="${CMD} --vfs-cache-max-age=168h"           # Cache files for 7 days
-CMD="${CMD} --vfs-read-chunk-size=128M"         # Optimized chunk size for streaming
-CMD="${CMD} --vfs-read-chunk-size-limit=2G"     # Reasonable chunk limit
-CMD="${CMD} --vfs-write-back=60m"               # Extended write back cache
-CMD="${CMD} --vfs-cache-poll-interval=60s"      # Less frequent polling to reduce load
+CMD="${CMD} --vfs-cache-max-size=450M"          # Reduced cache size for Heroku memory limits
+CMD="${CMD} --vfs-cache-max-age=24h"            # Shorter cache time for dynamic content
+CMD="${CMD} --vfs-read-chunk-size=64M"          # Smaller chunks for faster seeking
+CMD="${CMD} --vfs-read-chunk-size-limit=512M"   # Lower limit for better responsiveness
+CMD="${CMD} --vfs-read-chunk-streams=8"         # Multiple parallel streams for seeking
+CMD="${CMD} --vfs-read-ahead=256M"              # Read ahead for smoother playback
+CMD="${CMD} --vfs-write-back=5s"                # Faster write back
+CMD="${CMD} --vfs-cache-poll-interval=30s"      # More frequent polling for updates
 
-# HTTP server optimizations
-CMD="${CMD} --max-header-bytes=16384"           # Increased header size for large requests
-CMD="${CMD} --server-read-timeout=300s"         # 5 minutes read timeout
-CMD="${CMD} --server-write-timeout=300s"        # 5 minutes write timeout
+# HTTP server optimizations for video seeking
+CMD="${CMD} --max-header-bytes=32768"           # Larger headers for range requests
+CMD="${CMD} --server-read-timeout=60s"          # Shorter timeout to prevent H27 errors
+CMD="${CMD} --server-write-timeout=60s"         # Shorter timeout for faster response
 
-# Directory and file handling
-CMD="${CMD} --dir-cache-time=30m"               # Directory cache time
-CMD="${CMD} --poll-interval=60s"                # Polling interval
+# Directory and file handling optimized for video
+CMD="${CMD} --dir-cache-time=10m"               # Shorter directory cache for responsiveness
+CMD="${CMD} --poll-interval=30s"                # More frequent polling
 CMD="${CMD} --no-checksum"                      # Skip checksums for faster streaming
+CMD="${CMD} --no-modtime"                       # Skip modification time checks
 
-# Global rclone options (these work with serve http)
-export RCLONE_BUFFER_SIZE=256M                  # Set buffer size via environment
-export RCLONE_TIMEOUT=600s                      # 10 minutes total timeout
-export RCLONE_CONTIMEOUT=120s                   # 2 minutes connection timeout
-export RCLONE_EXPECT_CONTINUE_TIMEOUT=60s       # Handle large file uploads better
-export RCLONE_TRANSFERS=8                       # Reduced transfers to avoid overwhelming
-export RCLONE_CHECKERS=16                       # Balanced checkers
-export RCLONE_LOW_LEVEL_RETRIES=10              # More retries for unstable connections
-export RCLONE_MULTI_THREAD_STREAMS=4            # Reduced multi-threading
+# Global rclone options optimized for video streaming and seeking
+export RCLONE_BUFFER_SIZE=128M                  # Smaller buffer for faster seeking
+export RCLONE_TIMEOUT=120s                      # Shorter timeout to prevent H27
+export RCLONE_CONTIMEOUT=30s                    # Quick connection timeout
+export RCLONE_EXPECT_CONTINUE_TIMEOUT=10s       # Faster expect continue
+export RCLONE_TRANSFERS=4                       # Fewer transfers to prevent overwhelming Heroku
+export RCLONE_CHECKERS=8                        # Fewer checkers for stability
+export RCLONE_LOW_LEVEL_RETRIES=5               # Fewer retries for faster response
+export RCLONE_MULTI_THREAD_STREAMS=8            # More streams for parallel seeking
 export RCLONE_FAST_LIST=true                    # Faster directory listings
-export RCLONE_USE_MMAP=true                     # Use memory mapping for better performance
-export RCLONE_BWLIMIT_FILE=100M                 # Limit per-file bandwidth
-export RCLONE_IGNORE_CHECKSUM=true              # Skip checksum for faster streaming
-export RCLONE_NO_TRAVERSE=true                  # Don't traverse all files upfront
-export RCLONE_DISABLE=move                      # Disable move operations for safety
-export RCLONE_LOG_LEVEL=INFO                    # INFO level logging
+export RCLONE_USE_MMAP=true                     # Memory mapping for performance
+export RCLONE_BWLIMIT_FILE=50M                  # Lower bandwidth limit to prevent timeouts
+export RCLONE_IGNORE_CHECKSUM=true              # Skip checksums
+export RCLONE_NO_TRAVERSE=true                  # Don't traverse all files
+export RCLONE_DISABLE=move                      # Disable move operations
+export RCLONE_LOG_LEVEL=NOTICE                  # Less verbose logging
 export RCLONE_LOG_FORMAT="date,time,level,msg"  # Structured logging
-export RCLONE_STATS=60s                         # Show stats every minute
-export RCLONE_STATS_ONE_LINE=true               # Compact stats format
+export RCLONE_STATS=30s                         # More frequent stats
+export RCLONE_STATS_ONE_LINE=true               # Compact stats
+export RCLONE_TPX_TX_BUFFER_SIZE=64M            # Smaller transfer buffer
+export RCLONE_DRIVE_CHUNK_SIZE=32M              # Smaller Google Drive chunks for seeking
 
 if [ -n "${USERNAME}" ] && [ -n "${PASSWORD}" ]; then
     CMD="${CMD} --user=\"$USERNAME\" --pass=\"$PASSWORD\""
@@ -109,20 +114,21 @@ else
     echo "Template is set to light"
 fi
 
-echo "🔧 FIXED: Running rclone with enhanced video streaming stability (v1.69.3 compatible)"
-echo "✅ Key fixes applied:"
-echo "- Extended timeouts: 10min total, 2min connection (via environment variables)"
-echo "- Optimized buffer: 256MB with 128MB chunks (smoother streaming)"
-echo "- Reduced transfers: 8 concurrent (prevents overwhelming)"
-echo "- Enhanced retries: 10 attempts (better stability)"
-echo "- 7-day cache duration (longer persistence)"
-echo "- Per-file bandwidth limit: 100MB/s (prevents timeouts)"
+echo "🔧 OPTIMIZED: Running rclone for smooth video seeking (Heroku compatible)"
+echo "✅ Key optimizations for video streaming:"
+echo "- Shorter timeouts: 2min total, 30s connection (prevents H27 errors)"
+echo "- Smaller buffers: 128MB with 64MB chunks (faster seeking)"
+echo "- Parallel streams: 8 concurrent for smooth skipping"
+echo "- Reduced transfers: 4 concurrent (Heroku stability)"
+echo "- Quick cache: 24h duration with 30s polling"
+echo "- Per-file bandwidth: 50MB/s (prevents timeouts)"
+echo "- Google Drive chunks: 32MB (optimized for seeking)"
 echo ""
-echo "🎯 Expected improvements:"
-echo "- Eliminated H27/H28 timeout errors"
-echo "- Smoother video playback without interruptions"
-echo "- Better handling of large video files"
-echo "- More stable connections for mobile devices"
-echo "- Reduced 499 status errors"
+echo "🎯 Expected improvements for video playback:"
+echo "- Eliminated H27 timeout errors when seeking"
+echo "- Smooth video skipping without lag"
+echo "- Faster response to range requests"
+echo "- Better mobile device compatibility" 
+echo "- Reduced 499 status errors during playback"
 
 eval $CMD
