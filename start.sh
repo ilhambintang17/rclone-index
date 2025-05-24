@@ -67,8 +67,8 @@ CMD="${CMD} --vfs-cache-max-age=24h"            # Shorter cache time for dynamic
 CMD="${CMD} --vfs-read-chunk-size=32M"          # Smaller chunks for faster seeking
 CMD="${CMD} --vfs-read-chunk-size-limit=512M"   # Lower limit for better responsiveness
 CMD="${CMD} --vfs-read-chunk-streams=8"         # Multiple parallel streams for seeking
-# Reduced VFS read ahead buffer to conserve memory (was 256M)
-CMD="${CMD} --vfs-read-ahead=128M"              # Read ahead for smoother playback
+# Further reduced VFS read ahead for potentially unstable connections (was 128M)
+CMD="${CMD} --vfs-read-ahead=64M"              # Read ahead for smoother playback
 CMD="${CMD} --vfs-read-wait=5s"                 # Time to wait for more data from source
 CMD="${CMD} --vfs-write-back=5s"                # Faster write back
 CMD="${CMD} --vfs-cache-poll-interval=30s"      # More frequent polling for updates
@@ -87,8 +87,8 @@ CMD="${CMD} --no-checksum"                      # Skip checksums for faster stre
 CMD="${CMD} --no-modtime"                       # Skip modification time checks
 
 # Global rclone options optimized for video streaming and seeking
-# Reduced rclone buffer size to conserve memory (was 128M)
-export RCLONE_BUFFER_SIZE=64M                  # Smaller buffer for faster seeking
+# Further reduced rclone buffer size for minimal footprint (was 64M)
+export RCLONE_BUFFER_SIZE=32M                  # Smaller buffer for faster seeking
 # Reduced overall rclone operation timeout to fail faster on stuck operations (was 120s)
 export RCLONE_TIMEOUT=30s                      # Shorter timeout to prevent H27
 export RCLONE_CONTIMEOUT=30s                    # Quick connection timeout
@@ -109,6 +109,8 @@ export RCLONE_LOG_FORMAT="date,time,level,msg"  # Structured logging
 export RCLONE_STATS=30s                         # More frequent stats
 export RCLONE_STATS_ONE_LINE=true               # Compact stats
 export RCLONE_DRIVE_CHUNK_SIZE=32M              # Smaller Google Drive chunks for seeking
+export RCLONE_DRIVE_PACER_MIN_SLEEP=500ms       # Minimum time to wait between API calls
+export RCLONE_DRIVE_PACER_BURST=10                # Number of API calls to allow in a burst
 
 if [ -n "${USERNAME}" ] && [ -n "${PASSWORD}" ]; then
     CMD="${CMD} --user=\"$USERNAME\" --pass=\"$PASSWORD\""
